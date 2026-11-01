@@ -1,0 +1,85 @@
+name: Build Orbit Board (from zip)
+
+# Bootstrap build: this repo holds "OrbitBoard-Custom(1).zip" at the root.
+# This workflow unzips it into the workspace root, verifies the removals,
+# builds the stable release, and uploads the APK as an artifact.
+# (The zip also contains its own .github/workflows/build.yml for later
+# git-based use; this bootstrap is the one to run while the repo is zip-only.)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unzip the codebase to the root
+        run: |
+          unzip -o "OrbitBoard-Custom(1).zip" -d .
+          ls
+
+      - name: Verify removed features are absent from source
+        run: |
+          set -e
+          for p in \
+            java/src/org/futo/inputmethod/updates \
+            java/src/org/futo/inputmethod/announcements \
+            java/src/org/futo/inputmethod/latin/capture \
+            java/src/org/futo/inputmethod/latin/uix/voiceinput \
+            java/src/org/futo/inputmethod/latin/uix/actions/VoiceInputAction.kt \
+            java/src/org/futo/inputmethod/latin/uix/settings/pages/VoiceInput.kt \
+            voiceinput-shared ; do
+            if [ -e "$p" ]; then
+              echo "::error::Removed path is present again: $p"
+              exit 1
+            fi
+          done
+          if grep -rq "web.ndpnt.co" java/src common/src; then
+            echo "::error::Screenshot AI assistant endpoint found in source"
+            exit 1
+          fi
+          if grep -rq "org.futo.voiceinput" java/src common/src; then
+            echo "::error::Voice-input module reference found in source"
+            exit 1
+          fi
+          echo "PASS: voice typing, updates, announcements, crash reporting and the screenshot AI assistant are absent."
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK 34 + NDK
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.1.8937393" "ndk;25.2.9519653"
+
+      - name: Build stable release
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleStableRelease --no-daemon
+
+      - name: Verify APK permissions
+        run: |
+          APK=$(find build/outputs/apk/stable/release -name "*.apk" | head -n 1)
+          echo "Permissions of: $APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump permissions "$APK"
+          if "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump permissions "$APK" | grep -q "android.permission.RECORD_AUDIO"; then
+            echo "::error::RECORD_AUDIO found in the APK — voice typing removal did not apply."
+            exit 1
+          fi
+          echo "PASS: no RECORD_AUDIO. INTERNET is expected (Cloud Translate, explicit tap only)."
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbit-board-custom-apk
+          path: build/outputs/apk/stable/release/*.apk
+          if-no-files-found: error
