@@ -1,21 +1,26 @@
 name: Build Orbit Board (from zip)
 
-# Bootstrap build v2 — name-proof and self-completing:
-#  1. Finds the single .zip in this repo (whatever its name is)
-#  2. Unzips it into the root
-#  3. Verifies the spyware / voice / update removals
-#  4. Commits the unzipped source back into this repo, so after this run
-#     the repo holds the real code and the real workflow from inside the
-#     zip (.github/workflows/build.yml, "Build Orbit Board (Custom)") —
-#     use that workflow for future builds; this bootstrap's job is done.
-#  5. Builds the stable release and uploads the APK as an artifact.
+# Bootstrap build v4:
+#  1. If the source is not in the repo yet, finds the single .zip
+#     (whatever its name), unzips it into the root.
+#  2. Verifies the spyware / voice / update removals.
+#  3. Commits the unzipped source back into this repo. The real build
+#     workflow travels inside the zip as a plain file named
+#     "filename.yml" at the root — not a workflow path, so this push
+#     is accepted (the Actions robot may not push workflow files).
+#     After this run, rename filename.yml in the GitHub web UI to
+#     .github/workflows/build.yml to activate the real workflow.
+#  4. Builds the stable release and uploads the APK as an artifact.
+# On later runs the source is already in the repo, so steps 1 and 3
+# skip themselves and it simply builds.
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
 
 permissions:
   contents: write
-  workflows: write
 
 jobs:
   build:
@@ -24,11 +29,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Find and unzip the codebase
+      - name: Find and unzip the codebase (first run only)
         run: |
+          if [ -f settings.gradle ]; then
+            echo "Source already in the repo — skipping unzip"
+            exit 0
+          fi
           ZIP=$(find . -maxdepth 2 -name "*.zip" -not -path "./.git/*" | head -n 1)
           if [ -z "$ZIP" ]; then
-            echo "::error::No .zip file found in this repo"
+            echo "::error::No .zip file found in this repo and no source either"
             exit 1
           fi
           echo "Unzipping: $ZIP"
@@ -61,7 +70,7 @@ jobs:
           fi
           echo "PASS: voice typing, updates, announcements, crash reporting and the screenshot AI assistant are absent."
 
-      - name: Save the unzipped source into the repo
+      - name: Save the unzipped source into the repo (first run only)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
