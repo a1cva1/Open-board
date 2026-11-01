@@ -1,17 +1,18 @@
 name: Build Orbit Board (from zip)
 
-# Bootstrap build v4:
+# Bootstrap build v5:
 #  1. If the source is not in the repo yet, finds the single .zip
 #     (whatever its name), unzips it into the root.
-#  2. Verifies the spyware / voice / update removals.
-#  3. Commits the unzipped source back into this repo. The real build
-#     workflow travels inside the zip as a plain file named
-#     "filename.yml" at the root — not a workflow path, so this push
-#     is accepted (the Actions robot may not push workflow files).
-#     After this run, rename filename.yml in the GitHub web UI to
-#     .github/workflows/build.yml to activate the real workflow.
-#  4. Builds the stable release and uploads the APK as an artifact.
-# On later runs the source is already in the repo, so steps 1 and 3
+#  2. DELETES any workflow file that came out of the zip BEFORE the
+#     push — the Actions robot is forbidden from pushing workflow
+#     files, and that rejection killed the earlier runs. (This does
+#     not touch bootstrap-build.yml itself.)
+#  3. Verifies the spyware / voice / update removals.
+#  4. Commits the unzipped source back into this repo.
+#  5. Builds the stable release and uploads the APK as an artifact.
+# After this run, create .github/workflows/build.yml by hand in the
+# web UI and run it (the real "Build Orbit Board (Custom)" workflow).
+# On later runs the source is already in the repo, so steps 1–4
 # skip themselves and it simply builds.
 
 on:
@@ -35,7 +36,7 @@ jobs:
             echo "Source already in the repo — skipping unzip"
             exit 0
           fi
-          ZIP=$(find . -maxdepth 2 -name "*.zip" -not -path "./.git/*" | head -n 1)
+          ZIP=$(find . -maxdepth 2 -name "*.zip" -not -path "./.git/*" | sort | head -n 1)
           if [ -z "$ZIP" ]; then
             echo "::error::No .zip file found in this repo and no source either"
             exit 1
@@ -43,6 +44,12 @@ jobs:
           echo "Unzipping: $ZIP"
           unzip -o "$ZIP" -d .
           ls
+
+      - name: Remove any workflow file that came out of the zip
+        run: |
+          rm -f .github/workflows/build.yml
+          echo "Workspace workflow files now:"
+          ls .github/workflows/ || echo "(none)"
 
       - name: Verify removed features are absent from source
         run: |
