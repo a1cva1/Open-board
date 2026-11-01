@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:latin="http://schemas.android.com/apk/res-auto">
+    <include latin:keyboardLayout="@xml/key_styles_common" />
+    <include latin:keyboardLayout="@xml/row_number_switch" />
+    <Row
+        latin:keyLabelFlags="fontNormal"
+        latin:keyWidth="10%p">
+        <switch>
+            <case latin:keyboardLayoutSetElement="alphabetManualShifted|alphabetShiftLocked|alphabetShiftLockShifted">
+                <Key latin:keySpec="&#x0982;" />
+                <Key latin:keySpec="&#x200D;&#x09CD;&#x09AF;" />
+                <Key latin:keySpec="&#x09A2;" />
+                <Key latin:keySpec="&#x09AB;" />
+                <Key latin:keySpec="&#x09A0;" />
+                <Key latin:keySpec="&#x099B;" />
+                <Key latin:keySpec="&#x099D;" />
+                <Key latin:keySpec="&#x099E;" />
+                <Key latin:keySpec="&#x0998;" />
+                <Key latin:keySpec="&#x09DD;" />
+            </case>
+            <default>
+                <Key latin:keySpec="&#x0999;" latin:moreKeys="&#x0982;,!noPanelAutoMoreKey!,&#x09E7;,1" />
+                <Key latin:keySpec="&#x09AF;" latin:moreKeys="&#x09DF;,!noPanelAutoMoreKey!,&#x09E8;,2" />
+                <Key latin:keySpec="&#x09A1;" latin:moreKeys="&#x09A2;,!noPanelAutoMoreKey!,&#x09E9;,3" />
+                <Key latin:keySpec="&#x09AA;" latin:moreKeys="&#x09AB;,!noPanelAutoMoreKey!,&#x09EA;,4" />
+                <Key latin:keySpec="&#x099F;" latin:moreKeys="&#x09A0;,!noPanelAutoMoreKey!,&#x09EB;,5" />
+                <Key latin:keySpec="&#x099A;" latin:moreKeys="&#x099B;,!noPanelAutoMoreKey!,&#x09EC;,6" />
+                <Key latin:keySpec="&#x099C;" latin:moreKeys="&#x099D;,!noPanelAutoMoreKey!,&#x09ED;,7" />
+                <Key latin:keySpec="&#x09B9;" latin:moreKeys="&#x099E;,!noPanelAutoMoreKey!,&#x09EE;,8" />
+                <Key latin:keySpec="&#x0997;" latin:moreKeys="&#x0998;,!noPanelAutoMoreKey!,&#x09EF;,9" />
+                <Key latin:keySpec="&#x09DC;" latin:moreKeys="&#x09DD;,!noPanelAutoMoreKey!,&#x09E6;,0" />
+            </default>
+        </switch>
+    </Row>
+    <Row
+        latin:keyLabelFlags="fontNormal"
+        latin:keyWidth="10%p">
+        <switch>
+            <case latin:keyboardLayoutSetElement="alphabetManualShifted|alphabetShiftLocked|alphabetShiftLockShifted">
+                <Key latin:keySpec="&#x098B;" latin:keyXPos="5%p" />
+                <Key latin:keySpec="&#x09C2;" latin:moreKeys="&#x098A;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x09C0;" latin:moreKeys="&#x0988;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x09AD;" />
+                <Key latin:keySpec="&#x09B0;&#x09CD;&#x200D;" />
+                <Key latin:keySpec="&#x0985;" />
+                <Key latin:keySpec="&#x0996;" />
+                <Key latin:keySpec="&#x09A5;" />
+                <Key latin:keySpec="&#x09A7;" />
+            </case>
+            <default>
+                <Key latin:keySpec="&#x09C3;" latin:keyXPos="5%p" latin:moreKeys="&#x0990;,!noPanelAutoMoreKey!,&#x098B;,&#x09C8;" />
+                <Key latin:keySpec="&#x09C1;" latin:moreKeys="&#x0989;,!noPanelAutoMoreKey!,&#x09C2;,&#x098A;" />
+                <Key latin:keySpec="&#x09BF;" latin:moreKeys="&#x0987;,!noPanelAutoMoreKey!,&#x09C0;,&#x0988;" />
+                <Key latin:keySpec="&#x09AC;" latin:moreKeys="&#x09AD;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x09CD;" />
+                <Key latin:keySpec="&#x09BE;" latin:moreKeys="&#x0986;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x0995;" latin:moreKeys="&#x0996;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x09A4;" latin:moreKeys="&#x09CE;,!noPanelAutoMoreKey!,&#x09A5;" />
+                <Key latin:keySpec="&#x09A6;" latin:moreKeys="&#x09A7;,!noPanelAutoMoreKey!" />
+            </default>
+        </switch>
+    </Row>
+    <Row
+        latin:keyLabelFlags="fontNormal"
+        latin:keyWidth="10%p">
+        <Key
+            latin:keyStyle="shiftKeyStyle"
+            latin:keyWidth="15%p"
+            latin:visualInsetsRight="1%p" />
+        <switch>
+            <case latin:keyboardLayoutSetElement="alphabetManualShifted|alphabetShiftLocked|alphabetShiftLockShifted">
+                <Key latin:keySpec="&#x0983;" />
+                <Key latin:keySpec="&#x09CC;" latin:moreKeys="&#x0994;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x09C8;" latin:moreKeys="&#x0990;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x200D;&#x09CD;&#x09B0;" />
+                <Key latin:keySpec="&#x09A3;" />
+                <Key latin:keySpec="&#x09B7;" />
+                <Key latin:keySpec="&#x09B6;" />
+            </case>
+            <default>
+                <Key latin:keySpec="&#x0981;" latin:moreKeys="&#x0983;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x09CB;" latin:moreKeys="&#x0993;,!noPanelAutoMoreKey!,&#x09CC;,&#x0994;" />
+                <Key latin:keySpec="&#x09C7;" latin:moreKeys="&#x098F;,!noPanelAutoMoreKey!,&#x09C8;,&#x0990;" />
+                <Key latin:keySpec="&#x09B0;" latin:moreKeys="&#x09B2;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x09A8;" latin:moreKeys="&#x09A3;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x09B8;" latin:moreKeys="&#x09B7;,!noPanelAutoMoreKey!" />
+                <Key latin:keySpec="&#x09AE;" latin:moreKeys="&#x09B6;,!noPanelAutoMoreKey!" />
+            </default>
+        </switch>
+        <Key
+            latin:keyStyle="deleteKeyStyle"
+            latin:keyWidth="fillRight"
+            latin:visualInsetsLeft="1%p" />
+    </Row>
+    <Row latin:keyWidth="10%p">
+        <Key
+            latin:keySpec="?&#x09E7;&#x09E8;&#x09E9;|!code/key_switch_alpha_symbol"
+            latin:keyStyle="toSymbolKeyStyle"
+            latin:keyWidth="14%p" />
+        <Key
+            latin:keyStyle="emojiKeyStyle"
+            latin:keyWidth="10%p" />
+        <Key
+            latin:keySpec=","
+            latin:moreKeys="&apos;,&quot;,;,:,!noPanelAutoMoreKey!"
+            latin:keyLabelFlags="hasPopupHint"
+            latin:keyWidth="9%p"
+            latin:backgroundType="functional" />
+        <Key
+            latin:keyStyle="spaceKeyStyle"
+            latin:keyWidth="42%p" />
+        <Key
+            latin:keySpec="&#x0964;"
+            latin:moreKeys=".,?,!,!noPanelAutoMoreKey!"
+            latin:keyLabelFlags="hasPopupHint"
+            latin:keyWidth="10%p"
+            latin:backgroundType="functional" />
+        <Key
+            latin:keyStyle="enterKeyStyle"
+            latin:keyWidth="fillRight" />
+    </Row>
+</merge>
