@@ -1,0 +1,119 @@
+name: Build Leaf Board
+
+# Leaf Board — one-file bootstrap + build:
+#  1. If the repo only contains lb.zip, this workflow unzips it to the repo
+#     root and commits the extracted source back to the repo.
+#  2. It then verifies the removals, builds the release APK, checks the APK
+#     carries no RECORD_AUDIO permission, and uploads it as an artifact.
+# If the source is already in the repo, step 1 is skipped and it just builds.
+# MANUAL ONLY: this workflow runs only when you press "Run workflow".
+# Uploading files or zips never triggers it.
+#
+# The build keeps the safety gates from the custom build:
+#  - Voice typing (Whisper) fully removed, update checker + announcements
+#    removed, crash reporting (ACRA) removed, hidden screenshot AI removed.
+#  - The ONLY network feature is Cloud Translate, on explicit tap only.
+#    INTERNET permission is present BY DESIGN. RECORD_AUDIO must not be.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout (full history — the build stamps its version from git)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Unzip source and commit it back (first run only)
+        run: |
+          set -e
+          if [ -f settings.gradle ]; then
+            echo "Source already in repo — skipping extraction."
+            exit 0
+          fi
+          ZIP=$(ls -1 *.zip 2>/dev/null | head -n 1)
+          if [ -z "$ZIP" ]; then
+            echo "::error::No settings.gradle and no .zip in the repo root. Upload lb.zip first."
+            exit 1
+          fi
+          echo "Extracting $ZIP ..."
+          unzip -o -q "$ZIP" -d .
+          if [ ! -f settings.gradle ]; then
+            echo "::error::Extraction finished but settings.gradle is missing — wrong zip?"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -Af
+          git commit -m "Import Leaf Board source from $ZIP"
+          git push origin "HEAD:${{ github.ref_name }}"
+          echo "Source committed back to the repo."
+
+      - name: Verify removed features are absent from source
+        run: |
+          set -e
+          for p in \
+            java/src/org/futo/inputmethod/updates \
+            java/src/org/futo/inputmethod/announcements \
+            java/src/org/futo/inputmethod/latin/capture \
+            java/src/org/futo/inputmethod/latin/uix/voiceinput \
+            java/src/org/futo/inputmethod/latin/uix/actions/VoiceInputAction.kt \
+            java/src/org/futo/inputmethod/latin/uix/settings/pages/VoiceInput.kt \
+            voiceinput-shared ; do
+            if [ -e "$p" ]; then
+              echo "::error::Removed path is present again: $p"
+              exit 1
+            fi
+          done
+          if grep -rq "web.ndpnt.co" java/src common/src; then
+            echo "::error::Screenshot AI assistant endpoint found in source"
+            exit 1
+          fi
+          if grep -rq "org.futo.voiceinput" java/src common/src; then
+            echo "::error::Voice-input module reference found in source"
+            exit 1
+          fi
+          echo "PASS: voice typing, updates, announcements, crash reporting and the screenshot AI assistant are absent."
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install SDK 34 + NDK
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | sort -V | tail -n 1)
+          echo "Using sdkmanager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "ndk;25.1.8937393" "ndk;25.2.9519653"
+
+      - name: Build stable release
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleStableRelease --no-daemon
+
+      - name: Verify APK permissions
+        run: |
+          APK=$(find build/outputs/apk/stable/release -name "*.apk" | head -n 1)
+          echo "Permissions of: $APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump permissions "$APK"
+          if "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump permissions "$APK" | grep -q "android.permission.RECORD_AUDIO"; then
+            echo "::error::RECORD_AUDIO found in the APK — voice typing removal did not apply."
+            exit 1
+          fi
+          echo "PASS: no RECORD_AUDIO. INTERNET is expected (Cloud Translate, explicit tap only)."
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: leaf-board-apk
+          path: build/outputs/apk/stable/release/*.apk
+          if-no-files-found: error
+          
