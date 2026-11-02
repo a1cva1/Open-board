@@ -1,0 +1,13 @@
+# Gradle
+.externalNativeBuild/
+.gradle/
+.idea/
+LatinIME.iml
+build/
+local.properties
+crashreporting.properties
+keystore.properties
+key.jks
+stable/
+
+*.apk
