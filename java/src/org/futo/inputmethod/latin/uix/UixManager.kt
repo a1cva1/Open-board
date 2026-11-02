@@ -747,6 +747,240 @@ class UixManager(private val latinIME: LatinIME) {
                                                     .background(latinIME.colorScheme.onBackground.copy(alpha = 0.30f))
                                                     .pointerInput(Unit) {
                                                         detectDragGestures(
+                                                            onDragStart = { },
+                                                            onDragEnd = {
+                                                                val newX = floatDragX
+                                                                val newLift = floatDragLift
+                                                                keyboardManagerForAction.getLifecycleScope().launch {
+                                                                    val ctx = keyboardManagerForAction.getContext()
+                                                                    if (newX != null) ctx.setSetting(FloatingXSetting, newX)
+                                                                    if (newLift != null) ctx.setSetting(FloatingLiftSetting, newLift)
+                                                                }
+                                                                floatDragX = null
+                                                                floatDragLift = null
+                                                            },
+                                                            onDragCancel = {
+                                                                floatDragX = null
+                                                                floatDragLift = null
+                                                            },
+                                                            onDrag = { change, dragAmount ->
+                                                                change.consume()
+                                                                val slackPx = with(gripDensity) {
+                                                                    (gripConfig.screenWidthDp.toFloat() * (1f - FLOATING_WIDTH_FRACTION)).dp.toPx()
+                                                                }
+                                                                if (slackPx > 0f) {
+                                                                    floatDragX = ((floatDragX ?: floatXPref) + dragAmount.x / slackPx).coerceIn(0f, 1f)
+                                                                }
+                                                                floatDragLift = ((floatDragLift ?: floatLiftPref) - dragAmount.y / gripDensity.density).coerceIn(0f, 200f)
+                                                            }
+                                                        )
+                                                    }
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Column {
+                                    Spacer(modifier = Modifier.weight(1.0f))
+
+                                    val keyboardSurfaceModifier = Modifier
+                                        .onSizeChanged {
+                                            latinIME.updateTouchableHeight(it.height)
+                                        }
+                                        .then(
+                                            if (floatingMode) {
+                                                Modifier
+                                                    .align(BiasAlignment.Horizontal(-1f + 2f * floatX))
+                                                    .fillMaxWidth(FLOATING_WIDTH_FRACTION)
+                                                    .padding(bottom = floatLift.dp)
+                                            } else {
+                                                Modifier
+                                            }
+                                        )
+
+                                    if (!floatingMode && oneHandedMode != 0) {
+                                        Row(modifier = Modifier.fillMaxWidth()) {
+                                            if (oneHandedMode == 1) {
+                                                OneHandedStrip(oneHandedMode)
+                                            }
+
+                                            Surface(
+                                                modifier = keyboardSurfaceModifier.weight(1f),
+                                                color = latinIME.keyboardColor
+                                            ) {
+                                                KeyboardSurfaceContents()
+                                            }
+
+                                            if (oneHandedMode == 2) {
+                                                OneHandedStrip(oneHandedMode)
+                                            }
+                                        }
+                                    } else {
+                                        Surface(
+                                            modifier = keyboardSurfaceModifier,
+                                            color = latinIME.keyboardColor,
+                                            shape = if (floatingMode) RoundedCornerShape(24.dp) else RectangleShape,
+                                            shadowElevation = if (floatingMode) 12.dp else 0.dp
+                                        ) {
+                                            KeyboardSurfaceContents()
+                                        }
+                                    }
+                                }
+
+                                ActionEditorHost()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun createComposeView(): View {
+        if(composeView != null) {
+            composeView = null
+            //throw IllegalStateException("Attempted to create compose view, when one is already created!")
+        }
+
+        composeView = ComposeView(latinIME).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setParentCompositionContext(null)
+
+            latinIME.setOwners()
+        }
+
+        setContent()
+
+        return composeView!!
+    }
+
+    fun getComposeView(): View? {
+        return composeView
+    }
+
+    fun onColorSchemeChanged() {
+        setContent()
+    }
+
+    fun onInputFinishing() {
+        closeActionWindow()
+        languageSwitcherDialog?.dismiss()
+        isShowingActionEditor.value = false
+    }
+
+    fun cleanUpPersistentStates() {
+        println("Cleaning up persistent states")
+        for((key, value) in persistentStates.entries) {
+            if(currWindowAction != key) {
+                latinIME.lifecycleScope.launch { value?.cleanUp() }
+            }
+        }
+    }
+
+    fun closeActionWindow() {
+        if(currWindowActionWindow == null) return
+        returnBackToMainKeyboardViewFromAction()
+    }
+
+
+    fun updateVisibility(shouldShowSuggestionsStrip: Boolean, fullscreenMode: Boolean) {
+        this.shouldShowSuggestionStrip = shouldShowSuggestionsStrip
+        setContent()
+    }
+
+    fun setSuggestions(suggestedWords: SuggestedWords?, rtlSubtype: Boolean) {
+        this.suggestedWords = suggestedWords
+        setContent()
+
+        if(currentNotice.value != null) {
+            numSuggestionsSinceNotice += 1
+            if(numSuggestionsSinceNotice > 4) {
+                currentNotice.value?.onDismiss(latinIME)
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    fun onInlineSuggestionsResponse(response: InlineSuggestionsResponse): Boolean {
+        currentNotice.value?.onDismiss(latinIME)
+
+        inlineSuggestions = response.inlineSuggestions.map {
+            latinIME.inflateInlineSuggestion(it)
+        }
+        setContent()
+
+        return true
+    }
+
+    fun openEmojiKeyboard() {
+        if(currWindowAction == null) {
+            onActionActivated(EmojiAction)
+        }
+    }
+
+    fun triggerAction(id: Int, alt: Boolean) {
+        val action = AllActions.getOrNull(id) ?: throw IllegalArgumentException("No such action with ID $id")
+
+        if(alt) {
+            onActionAltActivated(action)
+        } else {
+            if (currWindowAction != null && action.windowImpl != null) {
+                closeActionWindow()
+            }
+
+            onActionActivated(action)
+        }
+    }
+
+    fun requestForgetWord(suggestedWordInfo: SuggestedWords.SuggestedWordInfo) {
+        keyboardManagerForAction.requestDialog(
+            latinIME.getString(R.string.blacklist_from_suggestions, suggestedWordInfo.mWord),
+            listOf(
+                DialogRequestItem(latinIME.getString(R.string.cancel)) { },
+                DialogRequestItem(latinIME.getString(R.string.blacklist)) {
+                    latinIME.forceForgetWord(suggestedWordInfo)
+                },
+            ) + if(suggestedWordInfo.mKindAndFlags == SuggestedWordInfo.KIND_EMOJI_SUGGESTION) {
+                listOf(
+                    DialogRequestItem(latinIME.getString(R.string.disable_emoji)) {
+                        runBlocking { latinIME.setSetting(SHOW_EMOJI_SUGGESTIONS, false) }
+                        latinIME.refreshSuggestions()
+                    }
+                )
+            } else {
+                listOf()
+            },
+            { }
+        )
+
+        val v = latinIME.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator?
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            v!!.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            v!!.vibrate(50)
+        }
+    }
+
+    fun onCreate() {
+        AllActions.forEach { action ->
+            if(action.persistentStateInitialization == PersistentStateInitialization.OnKeyboardLoad) {
+                persistentStates[action] = action.persistentState?.let { it(keyboardManagerForAction) }
+            }
+        }
+
+        isActionsExpanded.value = latinIME.getSettingBlocking(ActionBarExpanded)
+    }
+
+    fun onPersistentStatesUnlocked() {
+        persistentStates.forEach {
+            latinIME.lifecycleScope.launch {
+                it.value?.onDeviceUnlocked()
+            }
+        }
+    }
+}
+                                            .pointerInput(Unit) {
+                                                        detectDragGestures(
                                                             onDragEnd = {
                                                                 val newX = floatDragX
                                                                 val newLift = floatDragLift
