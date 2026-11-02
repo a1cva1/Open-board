@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:latin="http://schemas.android.com/apk/res-auto">
+    <Key
+        latin:keySpec="h"
+        latin:moreKeys="!,!noPanelAutoMoreKey!,!text/morekeys_h" />
+    <Key
+        latin:keySpec="j"
+        latin:moreKeys="?,!noPanelAutoMoreKey!,!text/morekeys_j" />
+    <Key
+        latin:keySpec="k"
+        latin:moreKeys="(,!noPanelAutoMoreKey!,!text/morekeys_k" />
+    <Key
+        latin:keySpec="l"
+        latin:moreKeys="),!noPanelAutoMoreKey!,!text/morekeys_l" />
+</merge>
